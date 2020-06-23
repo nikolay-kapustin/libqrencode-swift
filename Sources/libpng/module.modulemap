@@ -1,0 +1,4 @@
+module libpng {
+    umbrella header "libpng_swift.h"
+    link "libpng"
+}

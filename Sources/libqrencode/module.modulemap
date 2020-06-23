@@ -1,0 +1,4 @@
+module libqrencode {
+    umbrella header "libqrencode_swift.h"
+    link "libqrencode"
+}
