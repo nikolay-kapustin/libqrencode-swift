@@ -20,7 +20,7 @@ dependencies: [
 ]
 ...
 ```
-Thi library works well in Mac OS and Linux – anywhere the Swift toolchain is available.
+The library works well in Mac OS and Linux – anywhere the Swift toolchain is available.
 
 ## Using
 
@@ -34,7 +34,9 @@ if result == true {
     // check qr.png file here
 }
 ```
+And viola!
+
+![QR](https://github.com/digital-horizon/libqrencode-swfit/blob/master/qr.png?raw=true)
 
 ## License
 The libqrencode-swfit is released under the [MIT License](LICENSE).
-
