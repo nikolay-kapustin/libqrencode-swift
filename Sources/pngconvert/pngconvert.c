@@ -204,3 +204,67 @@ static void fillRow(unsigned char *row, int num, const unsigned char color[])
 
     return 0;
 }
+
+////////////////////////////
+// write into mem buffer
+
+struct libpng_inmem_write_struct { /* This is from png.c */
+  unsigned char * pngBfr;  /* destination memory */
+  unsigned long pngSiz;  /* destination memory size (bytes) */
+} p_io;
+
+void wrtBgPng(png_structp pngWrtPtr, png_bytep data, png_size_t length) {
+    struct libpng_inmem_write_struct * p = (struct libpng_inmem_write_struct *) png_get_io_ptr(pngWrtPtr);
+    p->pngBfr = (unsigned char *) realloc(p->pngBfr, p->pngSiz + length); /* From png.c */
+    //if (!p->pngBfr) freeExit_w_msg((char *) "The PNG write memory did not correctly allocate.");
+    memmove(p->pngBfr + p->pngSiz, data, length);
+    p->pngSiz += length;
+}
+
+struct libpng_inmem_write_struct* writePNGBuffer(const QRcode *qrcode) {
+    png_structp pngWrtPtr; /* The pointer that points the PNG write structure */
+    png_infop pngWrtInfoPtr = NULL; ; /* The pointer that points the PNG write information */
+    //struct libpng_inmem_write_struct p_io; /* Holds the encoded PNG data */
+    //FILE * fw; /* The file pointer of the test file that will be wrote. */
+
+    p_io.pngBfr = NULL;
+    p_io.pngSiz = 0;
+    int realwidth;
+
+    realwidth = (qrcode->width + margin * 2) * size;
+    int imgWdth = realwidth;
+    int imgHght = realwidth;
+
+    pngWrtPtr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL); /* write_ptr */
+    //if (!pngWrtPtr) freeExit_w_msg((char *) "The PNG write memory did not correctly allocate.");
+    pngWrtInfoPtr = png_create_info_struct(pngWrtPtr);
+    //if (!pngWrtInfoPtr) freeExit_w_msg((char *) "The PNG write information memory did not correctly allocate.");
+    png_set_IHDR(pngWrtPtr, pngWrtInfoPtr, imgWdth, imgHght, 8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+    png_byte ** row_pointers = (png_byte **) png_malloc(pngWrtPtr, imgHght * sizeof(png_byte *));
+    size_t bytesPerRow = imgWdth << 2; /* 4 Bytes per pixel */
+    unsigned char * imgBfr = (unsigned char *) calloc(1, imgHght * bytesPerRow * sizeof(unsigned char));
+
+    for (int rw = 0; rw < imgHght; rw++) {
+        png_byte *rwPtr = row_pointers[rw] = (png_byte *) (imgBfr + rw * bytesPerRow);
+
+        for (int pxl = 0, byt = 0; pxl < imgWdth; pxl++) { /* Write a black background */
+            for (int clr = 0; clr < 3; clr++) rwPtr[byt++] = 0;
+            rwPtr[byt++] = 0xff;
+        }
+    }
+    p_io.pngBfr = (unsigned char *) malloc(4); /* Defines final PNG data location */
+    p_io.pngSiz = 4;
+    png_init_io(pngWrtPtr, (png_FILE_p) &p_io);
+    png_set_rows(pngWrtPtr, pngWrtInfoPtr, &row_pointers[0]);
+    png_set_write_fn(pngWrtPtr, &p_io, wrtBgPng, NULL);
+    png_write_png(pngWrtPtr, pngWrtInfoPtr, PNG_TRANSFORM_IDENTITY, NULL);
+    //fwrite(p_io.pngBfr + 4, 1, p_io.pngSiz, fw); /* Test file */
+    //freeExit_w_msg((char *) "The exit was normal.");
+
+    png_destroy_write_struct(&pngWrtPtr, &pngWrtInfoPtr);
+    //free(p_io.pngBfr);
+    return &p_io;
+}
+
+
+
